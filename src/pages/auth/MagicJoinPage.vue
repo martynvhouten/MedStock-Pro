@@ -1,8 +1,7 @@
 <template>
   <div class="magic-join-page">
     <!-- Main Join Card -->
-    <q-card class="join-card" flat bordered>
-      <q-card-section class="text-center">
+    <BaseCard variant="neumorph" class="join-card">
         <!-- Step Indicator -->
         <div class="step-indicator">
           <div class="step-icon">
@@ -84,16 +83,19 @@
             />
           </div>
         </div>
-      </q-card-section>
-    </q-card>
+    </BaseCard>
 
     <!-- How It Works -->
-    <q-card class="how-it-works-card" flat>
-      <q-card-section>
-        <div class="how-header">
-          <q-icon name="help_outline" />
-          <span>{{ $t('magicJoin.howItWorks') }}</span>
-        </div>
+    <BaseCard 
+      variant="glass-modern" 
+      class="how-it-works-card"
+      title="How It Works"
+      subtitle="Simple magic code system"
+      icon="help_outline"
+      icon-color="info"
+      header-color="info"
+    >
+
         
         <div class="steps">
           <div class="step">
@@ -118,34 +120,42 @@
             </div>
           </div>
         </div>
-      </q-card-section>
-    </q-card>
+    </BaseCard>
 
     <!-- QR Scanner Dialog -->
     <q-dialog v-model="showQRScanner">
-      <q-card style="width: 90vw; max-width: 400px;">
-        <q-card-section>
-          <div class="text-h6 text-center">{{ $t('magicJoin.scanTitle') }}</div>
-          <div class="scanner-area">
-            <q-icon name="qr_code_scanner" size="8rem" color="grey-5" />
-            <p>{{ $t('magicJoin.scanInstructions') }}</p>
-            <!-- Real QR scanner would go here -->
-          </div>
-        </q-card-section>
-        <q-card-actions align="center">
+      <BaseCard 
+        variant="elevated" 
+        style="width: 90vw; max-width: 400px;"
+        title="Scan QR Code"
+        subtitle="Scan to auto-fill magic code"
+        icon="qr_code_scanner"
+        icon-color="primary"
+        header-color="primary"
+      >
+        <div class="scanner-area">
+          <q-icon name="qr_code_scanner" size="8rem" color="grey-5" />
+          <p>{{ $t('magicJoin.scanInstructions') }}</p>
+          <!-- Real QR scanner would go here -->
+        </div>
+        <template #actions>
           <q-btn flat :label="$t('common.cancel')" @click="showQRScanner = false" />
-        </q-card-actions>
-      </q-card>
+        </template>
+      </BaseCard>
     </q-dialog>
 
     <!-- Welcome Dialog -->
     <q-dialog v-model="showWelcome" persistent>
-      <q-card class="welcome-dialog">
-        <q-card-section class="text-center">
-          <div class="welcome-icon">
-            <q-icon name="celebration" size="4rem" color="primary" />
-          </div>
-          <h3>{{ $t('magicJoin.welcomeTitle') }}</h3>
+      <BaseCard 
+        variant="premium" 
+        class="welcome-dialog"
+        title="Welcome!"
+        subtitle="You're successfully joined"
+        icon="celebration"
+        icon-color="primary"
+        header-color="primary"
+      >
+        <div class="text-center">
           <p>{{ welcomeMessage }}</p>
           <q-btn
             :label="$t('magicJoin.getStarted')"
@@ -154,8 +164,8 @@
             unelevated
             @click="finishJoin"
           />
-        </q-card-section>
-      </q-card>
+        </div>
+      </BaseCard>
     </q-dialog>
 
     <!-- Upgrade To Member Dialog -->
@@ -174,6 +184,7 @@ import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
+import BaseCard from 'src/components/base/BaseCard.vue';
 import { PermanentUserService } from 'src/services/permanentUsers';
 import { MagicInviteService } from 'src/services/magicInvites';
 import UpgradeToMemberDialog from 'src/components/auth/UpgradeToMemberDialog.vue';

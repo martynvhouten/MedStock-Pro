@@ -1,12 +1,15 @@
 <template>
   <q-dialog v-model="isOpen" persistent>
-    <q-card class="scanner-card" style="min-width: 500px; max-width: 600px;">
-      <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">
-          <q-icon name="qr_code_scanner" class="q-mr-sm" />
-          {{ $t('inventory.scanBarcode') }}
-        </div>
-        <q-space />
+    <BaseCard 
+      variant="glass-modern" 
+      class="scanner-card" 
+      style="min-width: 500px; max-width: 600px;"
+      title="Scan Barcode"
+      icon="qr_code_scanner"
+      icon-color="primary"
+      header-color="primary"
+    >
+      <template #header-actions>
         <q-btn-group>
           <q-btn
             :icon="scanMode === 'manual' ? 'keyboard' : 'qr_code_scanner'"
@@ -25,9 +28,7 @@
           />
         </q-btn-group>
         <q-btn icon="close" flat round dense v-close-popup />
-      </q-card-section>
-
-      <q-card-section>
+      </template>
         <!-- Camera Mode -->
         <div v-if="scanMode === 'camera'" class="camera-section">
           <div class="camera-container">
@@ -140,9 +141,8 @@
         <div class="text-caption text-grey-6 q-mt-md">
           {{ $t('bestellijsten.scanner.help') }}
         </div>
-      </q-card-section>
 
-      <q-card-actions align="right">
+      <template #actions>
         <q-btn flat :label="$t('common.cancel')" v-close-popup />
         <q-btn
           v-if="recentScans.length > 0"
@@ -151,14 +151,15 @@
           :label="$t('bestellijsten.scanner.clearHistory')"
           @click="clearScanHistory"
         />
-      </q-card-actions>
-    </q-card>
+      </template>
+    </BaseCard>
   </q-dialog>
 </template>
 
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import BaseCard from 'src/components/base/BaseCard.vue';
   import {
     cameraScannerService,
     type ScanResult,

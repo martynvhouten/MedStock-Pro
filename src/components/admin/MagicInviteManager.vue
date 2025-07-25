@@ -10,9 +10,16 @@
     </div>
 
     <!-- How it Works -->
-    <q-card class="how-it-works-card q-mb-lg" flat bordered>
-      <q-card-section>
-        <div class="text-h6 q-mb-md">{{ $t('magicInvite.howItWorks') }}</div>
+    <BaseCard 
+      variant="premium" 
+      class="how-it-works-card q-mb-lg"
+      title="How it Works"
+      subtitle="Simple 3-step process"
+      icon="auto_awesome"
+      icon-color="secondary"
+      header-color="secondary"
+    >
+
         <div class="steps-grid">
           <div class="step">
             <div class="step-number">1</div>
@@ -36,13 +43,19 @@
             </div>
           </div>
         </div>
-      </q-card-section>
-    </q-card>
+    </BaseCard>
 
     <!-- Quick Invite -->
-    <q-card class="invite-card q-mb-lg" flat bordered>
-      <q-card-section>
-        <div class="text-h6 q-mb-md">{{ $t('magicInvite.createInvite') }}</div>
+    <BaseCard 
+      variant="gradient"
+      class="invite-card q-mb-lg"
+      title="Create Magic Invite"
+      subtitle="Generate secure invite links"
+      icon="link"
+      icon-color="primary"
+      header-color="primary"
+    >
+
         
         <div class="invite-form">
           <div class="row q-gutter-md">
@@ -79,13 +92,20 @@
             />
           </div>
         </div>
-      </q-card-section>
-    </q-card>
+    </BaseCard>
 
     <!-- Generated Invite -->
-    <q-card v-if="generatedInvite" class="generated-invite-card q-mb-lg" flat bordered>
-      <q-card-section>
-        <div class="text-h6 q-mb-md text-positive">{{ $t('magicInvite.inviteReady') }}</div>
+    <BaseCard 
+      v-if="generatedInvite" 
+      variant="glass-modern"
+      class="generated-invite-card q-mb-lg"
+      title="Invite Ready!"
+      subtitle="Share this magic code"
+      icon="check_circle"
+      icon-color="positive"
+      header-color="positive"
+    >
+
         
         <div class="invite-display">
           <!-- The Magic Code -->
@@ -134,16 +154,22 @@
             />
           </div>
         </div>
-      </q-card-section>
-    </q-card>
+    </BaseCard>
 
     <!-- Active Invites (Simplified) -->
-    <q-card v-if="activeInvites.length > 0" class="active-invites-card" flat bordered>
-      <q-card-section>
-        <div class="text-h6 q-mb-md">
-          {{ $t('magicInvite.activeInvites') }} 
+    <BaseCard 
+      v-if="activeInvites.length > 0" 
+      variant="neumorph"
+      class="active-invites-card"
+      title="Active Invites"
+      subtitle="Manage pending invitations"
+      icon="group_add"
+      icon-color="info"
+      header-color="info"
+    >
+        <template #header-actions>
           <q-chip :label="activeInvites.length" color="primary" />
-        </div>
+        </template>
         
         <div class="invites-list">
           <div v-for="invite in activeInvites" :key="invite.id" class="invite-item">
@@ -173,8 +199,7 @@
             </div>
           </div>
         </div>
-      </q-card-section>
-    </q-card>
+    </BaseCard>
 
     <!-- QR Code Dialog -->
     <q-dialog v-model="showQRDialog">
@@ -206,6 +231,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { useAuthStore } from 'src/stores/auth';
+import BaseCard from 'src/components/base/BaseCard.vue';
 
 // Types
 interface MagicInvite {

@@ -1,29 +1,26 @@
 <template>
-  <q-card class="team-overview-card" flat bordered>
-    <q-card-section class="team-header">
-      <div class="header-content">
-        <div class="title-section">
-          <q-icon name="group" size="2rem" color="primary" />
-          <div>
-            <h3 class="section-title">{{ $t('admin.teamOverview') }}</h3>
-            <p class="section-subtitle">{{ $t('admin.teamOverviewSubtitle') }}</p>
-          </div>
+  <BaseCard 
+    variant="neumorph" 
+    class="team-overview-card"
+    title="Team Overview"
+    subtitle="Manage your team members and permissions"
+    icon="group"
+    icon-color="primary"
+    header-color="primary"
+  >
+    <template #header-actions>
+      <div class="header-stats">
+        <div class="stat">
+          <div class="stat-number">{{ totalMembers }}</div>
+          <div class="stat-label">{{ $t('admin.totalMembers') }}</div>
         </div>
-        <div class="header-stats">
-          <div class="stat">
-            <div class="stat-number">{{ totalMembers }}</div>
-            <div class="stat-label">{{ $t('admin.totalMembers') }}</div>
-          </div>
-          <div class="stat">
-            <div class="stat-number">{{ onlineMembers }}</div>
-            <div class="stat-label">{{ $t('admin.onlineNow') }}</div>
-          </div>
+        <div class="stat">
+          <div class="stat-number">{{ onlineMembers }}</div>
+          <div class="stat-label">{{ $t('admin.onlineNow') }}</div>
         </div>
       </div>
-    </q-card-section>
+    </template>
 
-    <!-- Team Members List -->
-    <q-card-section class="team-list">
       <div v-if="loading" class="loading-state">
         <q-spinner-dots size="2rem" color="primary" />
         <p>{{ $t('admin.loadingTeam') }}</p>
@@ -36,9 +33,10 @@
       </div>
 
       <div v-else class="members-grid">
-        <q-card 
+        <BaseCard 
           v-for="member in teamMembers" 
           :key="member.id"
+          variant="glass-modern"
           class="member-card"
           :class="{ 
             'online': member.isOnline,
@@ -46,7 +44,7 @@
           }"
         >
           <!-- Member Header -->
-          <q-card-section class="member-header">
+          <div class="member-header">
             <div class="member-avatar">
               <q-avatar size="48px" :color="member.avatarColor" text-color="white">
                 <span v-if="!member.avatar_url">{{ member.initials }}</span>
@@ -204,10 +202,10 @@
                 </div>
               </div>
             </div>
-          </q-card-section>
+          </div>
 
           <!-- Quick Actions -->
-          <q-card-actions class="member-quick-actions">
+          <div class="member-quick-actions">
             <q-btn 
               flat 
               :label="$t('admin.sendMessage')" 
@@ -222,20 +220,17 @@
               size="sm"
               @click="viewSessions(member)"
             />
-          </q-card-actions>
-        </q-card>
+          </div>
+        </BaseCard>
       </div>
-    </q-card-section>
 
     <!-- Personal Code Dialog -->
     <q-dialog v-model="showCodeDialog">
-      <q-card style="min-width: 350px">
-        <q-card-section>
+      <BaseCard variant="elevated" style="min-width: 350px">
+        <template #header>
           <div class="text-h6">{{ $t('admin.personalMagicCode') }}</div>
           <div class="text-subtitle2">{{ selectedMember?.full_name }}</div>
-        </q-card-section>
-
-        <q-card-section class="text-center">
+        </template>
           <div class="magic-code-display">
             <div class="code-text">{{ selectedMember?.personal_magic_code }}</div>
             <q-btn 
@@ -248,18 +243,17 @@
           <p class="code-explanation">
             {{ $t('admin.magicCodeExplanation') }}
           </p>
-        </q-card-section>
-
-        <q-card-actions align="right">
+        <template #actions>
           <q-btn flat :label="$t('common.close')" v-close-popup />
-        </q-card-actions>
-      </q-card>
+        </template>
+      </BaseCard>
     </q-dialog>
-  </q-card>
+  </BaseCard>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import BaseCard from 'src/components/base/BaseCard.vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
 import { PermanentUserService, type EnhancedPermanentUser } from 'src/services/permanentUsers';

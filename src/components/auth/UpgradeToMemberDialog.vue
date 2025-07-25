@@ -7,7 +7,7 @@
     transition-hide="slide-down"
     class="upgrade-dialog"
   >
-    <q-card class="upgrade-card">
+    <BaseCard variant="premium" class="upgrade-card">
       <!-- Header -->
       <q-card-section class="upgrade-header text-center">
         <div class="celebration-icon">
@@ -37,11 +37,12 @@
       <q-card-section class="upgrade-options">
         <div class="options-grid">
           <!-- Option 1: Personal Magic Code -->
-          <q-card 
+          <BaseCard 
+            variant="gradient"
             class="option-card magic-code-option"
             :class="{ 'selected': selectedOption === 'magic_code' }"
             @click="selectOption('magic_code')"
-            clickable
+            style="cursor: pointer;"
           >
             <q-card-section class="text-center">
               <div class="option-icon">
@@ -80,15 +81,15 @@
                 class="full-width"
                 :class="{ 'selected-btn': selectedOption === 'magic_code' }"
               />
-            </q-card-section>
-          </q-card>
+            </BaseCard>
 
           <!-- Option 2: Email + Password -->
-          <q-card 
+          <BaseCard 
+            variant="gradient"
             class="option-card email-option"
             :class="{ 'selected': selectedOption === 'email_password' }"
             @click="selectOption('email_password')"
-            clickable
+            style="cursor: pointer;"
           >
             <q-card-section class="text-center">
               <div class="option-icon">
@@ -139,15 +140,15 @@
                 class="full-width"
                 :class="{ 'selected-btn': selectedOption === 'email_password' }"
               />
-            </q-card-section>
-          </q-card>
+            </BaseCard>
 
           <!-- Option 3: Device Remember -->
-          <q-card 
+          <BaseCard 
+            variant="gradient"
             class="option-card device-option"
             :class="{ 'selected': selectedOption === 'device_remember' }"
             @click="selectOption('device_remember')"
-            clickable
+            style="cursor: pointer;"
           >
             <q-card-section class="text-center">
               <div class="option-icon">
@@ -186,8 +187,7 @@
                 class="full-width"
                 :class="{ 'selected-btn': selectedOption === 'device_remember' }"
               />
-            </q-card-section>
-          </q-card>
+            </BaseCard>
         </div>
       </q-card-section>
 
@@ -231,7 +231,7 @@
           />
         </div>
       </q-card-actions>
-    </q-card>
+    </BaseCard>
   </q-dialog>
 </template>
 
@@ -239,6 +239,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useQuasar } from 'quasar';
+import BaseCard from 'src/components/base/BaseCard.vue';
 
 // Props & Emits
 interface Props {

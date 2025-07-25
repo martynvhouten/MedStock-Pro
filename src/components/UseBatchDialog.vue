@@ -1,15 +1,19 @@
 <template>
-  <q-card class="use-batch-dialog">
-    <q-card-section class="row items-center q-pb-none">
-      <div class="text-h6">{{ $t('batch.useBatch') }}</div>
-      <q-space />
+  <BaseCard 
+    variant="elevated" 
+    class="use-batch-dialog"
+    title="Use Batch"
+    subtitle="Process batch usage"
+    icon="remove_circle"
+    icon-color="primary"
+    header-color="primary"
+  >
+    <template #header-actions>
       <q-btn icon="close" flat round dense @click="$emit('close')" />
-    </q-card-section>
-
-    <q-card-section>
+    </template>
       <!-- Batch Information -->
       <div class="batch-info q-mb-lg">
-        <q-card flat bordered class="q-pa-md">
+        <BaseCard variant="neumorph" class="q-pa-md">
           <div class="text-subtitle2 text-grey q-mb-sm">
             {{ $t('batch.batchInformation') }}
           </div>
@@ -43,7 +47,7 @@
               </div>
             </div>
           </div>
-        </q-card>
+        </BaseCard>
       </div>
 
       <!-- Usage Form -->
@@ -102,7 +106,7 @@
         />
 
         <!-- Usage Summary -->
-        <q-card flat bordered class="q-pa-md" v-if="form.quantity > 0">
+        <BaseCard variant="glass-modern" class="q-pa-md" v-if="form.quantity > 0">
           <div class="text-subtitle2 text-grey q-mb-sm">
             {{ $t('batch.usageSummary') }}
           </div>
@@ -146,7 +150,7 @@
               </div>
             </div>
           </div>
-        </q-card>
+        </BaseCard>
 
         <!-- Form Actions -->
         <div class="row q-gutter-sm q-mt-lg">
@@ -167,13 +171,13 @@
           />
         </div>
       </q-form>
-    </q-card-section>
-  </q-card>
+  </BaseCard>
 </template>
 
 <script setup lang="ts">
   import { ref, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import BaseCard from 'src/components/base/BaseCard.vue';
   import { useQuasar, date } from 'quasar';
   import { useBatchStore } from 'src/stores/batch';
   import type { ProductBatchWithDetails } from 'src/types/inventory';

@@ -39,74 +39,42 @@
     <div class="row q-mb-lg stats-cards-container">
       <div class="col-12 col-sm-6 col-lg-3 stats-card-col">
         <BaseCard
-          variant="modern"
-          :title="$t('inventory.totalProducts')"
-          :subtitle="selectedLocationName"
+          variant="stats"
+          :value="stockLevels.length"
+          :label="$t('inventory.totalProducts')"
           icon="inventory_2"
-          header-color="primary"
-        >
-          <div class="kpi-content">
-            <div class="kpi-value">
-              {{ stockLevels.length }}
-            </div>
-            <div class="kpi-subtitle">{{ $t('inventory.products') }}</div>
-          </div>
-        </BaseCard>
+          icon-color="primary"
+        />
       </div>
 
       <div class="col-12 col-sm-6 col-lg-3 stats-card-col">
         <BaseCard
-          variant="modern"
-          :title="$t('inventory.stockLocations')"
-          :subtitle="$t('inventory.activeLocations')"
+          variant="stats"
+          :value="clinicStore.locations.length"
+          :label="$t('inventory.stockLocations')"
           icon="location_on"
-          header-color="info"
-        >
-          <div class="kpi-content">
-            <div class="kpi-value">
-              {{ clinicStore.locations.length }}
-            </div>
-            <div class="kpi-subtitle">{{ $t('inventory.locations') }}</div>
-          </div>
-        </BaseCard>
+          icon-color="info"
+        />
       </div>
 
       <div class="col-12 col-sm-6 col-lg-3 stats-card-col">
         <BaseCard
-          variant="modern"
-          :title="$t('inventory.dataLoaded')"
-          :subtitle="$t('inventory.upToDate')"
+          variant="stats"
+          :value="loading ? '...' : inventoryStore.realtimeConnected ? '🔄' : '✓'"
+          :label="$t('inventory.dataLoaded')"
           icon="check_circle"
-          header-color="positive"
-        >
-                      <div class="kpi-content">
-              <div class="kpi-value">
-                {{ loading ? '...' : inventoryStore.realtimeConnected ? '🔄' : '✓' }}
-              </div>
-              <div class="kpi-subtitle">{{ 
-                inventoryStore.realtimeConnected 
-                  ? $t('inventory.realTimeConnected') 
-                  : $t('inventory.status') 
-              }}</div>
-            </div>
-        </BaseCard>
+          icon-color="positive"
+        />
       </div>
 
       <div class="col-12 col-sm-6 col-lg-3 stats-card-col">
         <BaseCard
-          variant="modern"
-          :title="$t('inventory.lastUpdated')"
-          :subtitle="$t('inventory.refreshData')"
+          variant="stats"
+          :value="`${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2, '0')}`"
+          :label="$t('inventory.lastUpdated')"
           icon="refresh"
-          header-color="secondary"
-        >
-          <div class="kpi-content">
-            <div class="kpi-value">
-              {{ new Date().getHours() }}:{{ String(new Date().getMinutes()).padStart(2, '0') }}
-            </div>
-            <div class="kpi-subtitle">{{ $t('inventory.time') }}</div>
-          </div>
-        </BaseCard>
+          icon-color="secondary"
+        />
       </div>
     </div>
 

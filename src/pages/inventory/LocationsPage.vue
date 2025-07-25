@@ -9,39 +9,23 @@
     <!-- Summary Cards -->
     <div class="row q-gutter-md q-mb-lg">
       <div class="col-12 col-md-3">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="row items-center no-wrap">
-              <div class="col">
-                <div class="text-h6">{{ locations.length }}</div>
-                <div class="text-caption text-grey">
-                  {{ $t('locations.allLocations') }}
-                </div>
-              </div>
-              <div class="col-auto">
-                <q-icon name="place" size="24px" color="primary" />
-              </div>
-            </div>
-          </q-card-section>
-        </q-card>
+        <BaseCard
+          variant="stats"
+          :value="locations.length"
+          :label="$t('locations.allLocations')"
+          icon="place"
+          icon-color="primary"
+        />
       </div>
 
       <div class="col-12 col-md-3">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="row items-center no-wrap">
-              <div class="col">
-                <div class="text-h6">{{ mainLocationsCount }}</div>
-                <div class="text-caption text-grey">
-                  {{ $t('locations.mainLocations') }}
-                </div>
-              </div>
-              <div class="col-auto">
-                <q-icon name="star" size="24px" color="warning" />
-              </div>
-            </div>
-          </q-card-section>
-        </q-card>
+        <BaseCard
+          variant="stats"
+          :value="mainLocationsCount"
+          :label="$t('locations.mainLocations')"
+          icon="star"
+          icon-color="warning"
+        />
       </div>
     </div>
 
@@ -116,6 +100,7 @@
   import { useQuasar } from 'quasar';
   import PageTitle from '@/components/PageTitle.vue';
   import PageLayout from '@/components/PageLayout.vue';
+  import BaseCard from 'src/components/base/BaseCard.vue';
   import { useAuthStore } from 'src/stores/auth';
 
   const { t } = useI18n();

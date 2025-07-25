@@ -1,44 +1,35 @@
 <template>
-  <q-card 
+  <BaseCard 
+    variant="elevated"
     :class="widgetClasses"
     class="dashboard-widget"
+    :title="widget.title"
+    :subtitle="widget.subtitle"
+    :icon="widget.icon"
+    icon-color="primary"
     v-bind="$attrs"
   >
-    <!-- Widget Header -->
-    <q-card-section 
-      v-if="widget.title"
-      class="widget-header"
-    >
-      <div class="row items-center">
-        <div class="col">
-          <h6 class="widget-title">{{ widget.title }}</h6>
-        </div>
-        <div class="col-auto">
-          <q-btn
-            v-if="widget.type === 'chart'"
-            flat
-            round
-            dense
-            icon="more_vert"
-            size="sm"
-          >
-            <q-menu>
-              <q-list dense>
-                <q-item clickable v-close-popup>
-                  <q-item-section>Vernieuwen</q-item-section>
-                </q-item>
-                <q-item clickable v-close-popup>
-                  <q-item-section>Exporteren</q-item-section>
-                </q-item>
-              </q-list>
-            </q-menu>
-          </q-btn>
-        </div>
-      </div>
-    </q-card-section>
-
-    <!-- Widget Content -->
-    <q-card-section class="widget-content">
+    <template #header-actions>
+      <q-btn
+        v-if="widget.type === 'chart'"
+        flat
+        round
+        dense
+        icon="more_vert"
+        size="sm"
+      >
+        <q-menu>
+          <q-list dense>
+            <q-item clickable v-close-popup>
+              <q-item-section>Vernieuwen</q-item-section>
+            </q-item>
+            <q-item clickable v-close-popup>
+              <q-item-section>Exporteren</q-item-section>
+            </q-item>
+          </q-list>
+        </q-menu>
+      </q-btn>
+    </template>
       <!-- Metric Widget -->
       <div v-if="widget.type === 'metric'" class="metric-widget">
         <MetricWidget :data="widget.data" />
@@ -69,17 +60,17 @@
         <q-icon name="widgets" size="3rem" color="grey-5" />
         <p class="text-grey-6 q-mt-md">Widget type niet ondersteund</p>
       </div>
-    </q-card-section>
 
     <!-- Loading Overlay -->
     <q-inner-loading :showing="loading">
       <q-spinner-dots size="40px" color="primary" />
     </q-inner-loading>
-  </q-card>
+  </BaseCard>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import BaseCard from 'src/components/base/BaseCard.vue';
 import type { DashboardWidget } from '@/services/dashboard';
 import MetricWidget from './widgets/MetricWidget.vue';
 import ChartWidget from './widgets/ChartWidget.vue';

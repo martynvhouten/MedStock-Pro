@@ -9,8 +9,7 @@
     <div class="row q-gutter-md">
       <!-- Filters and Stats -->
       <div class="col-12">
-        <q-card class="glass-card">
-          <q-card-section>
+        <BaseCard variant="glass-modern">
             <div class="row items-center justify-between">
               <div class="col-auto">
                 <div class="text-h6">
@@ -57,8 +56,7 @@
                 </div>
               </div>
             </div>
-          </q-card-section>
-        </q-card>
+        </BaseCard>
       </div>
 
       <!-- Quick Actions -->

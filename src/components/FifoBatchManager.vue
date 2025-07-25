@@ -3,9 +3,14 @@
     <div class="row q-gutter-md">
       <!-- FIFO Suggestion Form -->
       <div class="col-12 col-md-6">
-        <q-card>
-          <q-card-section>
-            <div class="text-h6 q-mb-md">{{ $t('batch.fifoSuggestion') }}</div>
+        <BaseCard 
+          variant="neumorph"
+          title="FIFO Suggestion" 
+          subtitle="Generate batch usage recommendations"
+          icon="trending_up"
+          icon-color="info"
+          header-color="info"
+        >
 
             <q-form @submit="generateSuggestion" class="q-gutter-md">
               <q-select
@@ -47,15 +52,19 @@
                 icon="trending_up"
               />
             </q-form>
-          </q-card-section>
-        </q-card>
+        </BaseCard>
       </div>
 
       <!-- FIFO Results -->
       <div class="col-12 col-md-6">
-        <q-card>
-          <q-card-section>
-            <div class="text-h6 q-mb-md">{{ $t('batch.fifoResults') }}</div>
+        <BaseCard 
+          variant="glass-modern"
+          title="FIFO Results" 
+          subtitle="Recommended batch usage order"
+          icon="list_alt"
+          icon-color="positive"
+          header-color="positive"
+        >
 
             <div
               v-if="!fifoResults.length"
@@ -109,8 +118,7 @@
                 class="full-width"
               />
             </div>
-          </q-card-section>
-        </q-card>
+        </BaseCard>
       </div>
     </div>
   </div>
@@ -120,6 +128,7 @@
   import { ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useQuasar, date } from 'quasar';
+  import BaseCard from 'src/components/base/BaseCard.vue';
   import { useBatchStore } from 'src/stores/batch';
 
   const emit = defineEmits<{

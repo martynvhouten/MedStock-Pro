@@ -5,12 +5,16 @@
     maximized
     class="product-details-dialog"
   >
-    <q-card class="column no-wrap full-height">
-      <!-- Header -->
-      <q-card-section class="row items-center bg-primary text-white q-pa-md">
-        <q-icon name="info" size="1.5rem" class="q-mr-sm" />
-        <div class="text-h6">{{ $t('productsPage.details.title') }}</div>
-        <q-space />
+    <BaseCard 
+      variant="elevated" 
+      class="column no-wrap full-height"
+      title="Product Details" 
+      subtitle="View and manage product information"
+      icon="info"
+      icon-color="primary"
+      header-color="primary"
+    >
+      <template #header-actions>
         <q-btn
           icon="close"
           flat
@@ -19,7 +23,7 @@
           v-close-popup
           :title="$t('common.close')"
         />
-      </q-card-section>
+      </template>
 
       <!-- Content -->
       <q-card-section class="col scroll">
@@ -229,8 +233,8 @@
         />
         <q-space />
         <q-btn :label="$t('common.close')" color="grey-7" flat v-close-popup />
-      </q-card-actions>
-    </q-card>
+      </template>
+    </BaseCard>
   </q-dialog>
 </template>
 

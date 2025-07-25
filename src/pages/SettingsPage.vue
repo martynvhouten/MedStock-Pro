@@ -94,7 +94,7 @@
             aria-labelledby="appearance-title"
           >
             <!-- Dark Mode Toggle -->
-            <div class="setting-item glass-card">
+            <BaseCard variant="glass-modern" class="setting-item">
               <div class="setting-info">
                 <div class="setting-label" id="dark-mode-label">
                   {{ $t('settings.darkMode') }}
@@ -121,10 +121,10 @@
                   }}
                 </div>
               </div>
-            </div>
+            </BaseCard>
 
             <!-- Language Setting -->
-            <div class="setting-item glass-card">
+            <BaseCard variant="glass-modern" class="setting-item">
               <div class="setting-info">
                 <div class="setting-label" id="language-label">
                   {{ $t('settings.language') }}
@@ -152,7 +152,7 @@
             </div>
 
             <!-- Theme Setting -->
-            <div class="setting-item glass-card">
+            <BaseCard variant="glass-modern" class="setting-item">
               <div class="setting-info">
                 <div class="setting-label" id="theme-label">
                   {{ $t('settings.colorSchemeTitle') }}
@@ -177,36 +177,21 @@
                   :aria-labelledby="'theme-label'"
                 />
               </div>
-            </div>
+            </BaseCard>
           </div>
         </BaseCard>
       </div>
 
       <!-- Clinic Information -->
       <div class="settings-section full-width">
-        <q-card class="card-modern card-elevated">
-          <q-card-section class="card-header">
-            <div class="card-header-content">
-              <div class="card-title-section">
-                <q-icon
-                  name="business"
-                  color="info"
-                  size="24px"
-                  aria-hidden="true"
-                />
-                <div>
-                  <h2 class="card-title">{{ $t('settings.clinic') }}</h2>
-                  <p class="card-subtitle">
-                    {{ $t('settings.clinicInfoSubtitle') }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </q-card-section>
-
-          <q-separator />
-
-          <q-card-section class="card-content">
+        <BaseCard
+          variant="elevated"
+          :title="$t('settings.clinic')"
+          :subtitle="$t('settings.clinicInfoSubtitle')"
+          icon="business"
+          icon-color="info"
+          header-color="info"
+        >
             <div
               class="clinic-form-grid"
               role="group"
@@ -274,7 +259,7 @@
             </div>
 
             <div class="clinic-notice">
-              <q-banner class="notice-banner glass-card" rounded>
+              <q-banner class="notice-banner glass-card-modern" rounded>
                 <template v-slot:avatar>
                   <q-icon name="info" color="info" />
                 </template>
@@ -289,27 +274,17 @@
 
       <!-- Notification Settings -->
       <div class="settings-section">
-        <q-card class="card-modern card-elevated">
-          <q-card-section class="card-header">
-            <div class="card-header-content">
-              <div class="card-title-section">
-                <q-icon name="notifications" color="warning" size="24px" />
-                <div>
-                  <h3 class="card-title">{{ $t('settings.notifications') }}</h3>
-                  <p class="card-subtitle">
-                    {{ $t('settings.notificationSettingsSubtitle') }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </q-card-section>
-
-          <q-separator />
-
-          <q-card-section class="card-content">
+        <BaseCard
+          variant="elevated"
+          :title="$t('settings.notifications')"
+          :subtitle="$t('settings.notificationSettingsSubtitle')"
+          icon="notifications"
+          icon-color="warning"
+          header-color="warning"
+        >
             <div class="settings-items">
               <!-- Low Stock Alerts -->
-              <div class="setting-item glass-card">
+              <BaseCard variant="glass-modern" class="setting-item">
                 <div class="setting-info">
                   <div class="setting-label">
                     {{ $t('settings.stockAlertsLabel') }}
@@ -325,10 +300,10 @@
                     class="toggle-modern"
                   />
                 </div>
-              </div>
+              </BaseCard>
 
               <!-- Email Notifications -->
-              <div class="setting-item glass-card">
+              <BaseCard variant="glass-modern" class="setting-item">
                 <div class="setting-info">
                   <div class="setting-label">
                     {{ $t('settings.emailNotificationsLabel') }}
@@ -344,10 +319,10 @@
                     class="toggle-modern"
                   />
                 </div>
-              </div>
+              </BaseCard>
 
               <!-- Browser Notifications -->
-              <div class="setting-item glass-card">
+              <BaseCard variant="glass-modern" class="setting-item">
                 <div class="setting-info">
                   <div class="setting-label">
                     {{ $t('settings.browserNotificationsLabel') }}
@@ -371,26 +346,14 @@
 
       <!-- System Information -->
       <div class="settings-section">
-        <q-card class="card-modern card-elevated">
-          <q-card-section class="card-header">
-            <div class="card-header-content">
-              <div class="card-title-section">
-                <q-icon name="info" color="accent" size="24px" />
-                <div>
-                  <h3 class="card-title">
-                    {{ $t('settings.systemInfoTitle') }}
-                  </h3>
-                  <p class="card-subtitle">
-                    {{ $t('settings.systemInfoSubtitle') }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </q-card-section>
-
-          <q-separator />
-
-          <q-card-section class="card-content">
+        <BaseCard
+          variant="elevated"
+          :title="$t('settings.systemInfoTitle')"
+          :subtitle="$t('settings.systemInfoSubtitle')"
+          icon="info"
+          icon-color="accent"
+          header-color="accent"
+        >
             <div class="system-info">
               <div class="info-item">
                 <div class="info-label">{{ $t('settings.versionLabel') }}</div>
@@ -416,10 +379,9 @@
                     support@remcura.com
                   </a>
                 </div>
-              </div>
+              </BaseCard>
             </div>
-          </q-card-section>
-        </q-card>
+        </BaseCard>
       </div>
     </div>
   </PageLayout>

@@ -1,8 +1,14 @@
 <template>
-  <q-card class="batch-registration-card">
-    <q-card-section class="row items-center q-pb-none">
-      <div class="text-h6">{{ $t('batch.registerNewBatch') }}</div>
-      <q-space />
+  <BaseCard 
+    variant="premium" 
+    class="batch-registration-card"
+    title="Register New Batch"
+    subtitle="Add a new product batch to inventory"
+    icon="add_box"
+    icon-color="primary"
+    header-color="primary"
+  >
+    <template #header-actions>
       <q-btn
         v-if="!embedded"
         icon="close"
@@ -11,9 +17,7 @@
         dense
         @click="$emit('close')"
       />
-    </q-card-section>
-
-    <q-card-section>
+    </template>
       <q-form @submit="onSubmit" class="q-gutter-md">
         <!-- Product Selection -->
         <div class="row q-gutter-md">
@@ -193,14 +197,14 @@
           />
         </div>
       </q-form>
-    </q-card-section>
-  </q-card>
+  </BaseCard>
 </template>
 
 <script setup lang="ts">
   import { ref, computed, onMounted } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useQuasar } from 'quasar';
+  import BaseCard from 'src/components/base/BaseCard.vue';
   import { useBatchStore } from 'src/stores/batch';
   import { useAuthStore } from 'src/stores/auth';
   import { useFormValidation } from 'src/composables/useFormValidation';
