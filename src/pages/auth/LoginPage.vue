@@ -129,6 +129,12 @@
         </div>
       </div>
     </q-form>
+
+    <!-- Password Reset Dialog -->
+    <PasswordResetDialog
+      v-model="showPasswordResetDialog"
+      @back-to-login="showPasswordResetDialog = false"
+    />
   </div>
 </template>
 
@@ -140,6 +146,7 @@
   import { useAuthStore } from 'src/stores/auth';
   import { useFormValidation } from 'src/composables/useFormValidation';
   import { useErrorHandler } from 'src/utils/error-handler';
+  import PasswordResetDialog from 'src/components/auth/PasswordResetDialog.vue';
 
   const router = useRouter();
   const route = useRoute();
@@ -217,14 +224,10 @@
     });
   };
 
+  const showPasswordResetDialog = ref(false);
+
   const handleForgotPassword = () => {
-    $q.notify({
-      type: 'info',
-      message: t('auth.passwordResetComingSoon'),
-      timeout: 3000,
-      position: 'top-right',
-      icon: 'info',
-    });
+    showPasswordResetDialog.value = true;
   };
 </script>
 

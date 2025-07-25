@@ -16,6 +16,15 @@ const routes: RouteRecordRaw[] = [
           ),
         meta: { requiresAuth: false },
       },
+      {
+        path: 'reset-password',
+        name: 'reset-password',
+        component: () =>
+          import(
+            /* webpackChunkName: "auth-reset" */ 'pages/auth/ResetPasswordPage.vue'
+          ),
+        meta: { requiresAuth: false },
+      },
       // Future auth pages can be added here:
       // {
       //   path: 'register',

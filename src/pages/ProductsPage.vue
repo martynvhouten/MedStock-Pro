@@ -173,9 +173,11 @@
         </q-slide-transition>
       </div>
 
-      <!-- Products Table -->
+      <!-- Products - Responsive Layout -->
       <div class="products-table-container">
+        <!-- Desktop Table View -->
         <q-table
+          v-if="!$q.screen.lt.md"
           :rows="filteredProducts"
           :columns="tableColumns"
           :loading="loading"
@@ -184,7 +186,7 @@
           row-key="id"
           flat
           bordered
-          class="products-table"
+          class="products-table desktop-only"
           @update:pagination="
             value =>
               (pagination = { ...value, rowsNumber: value.rowsNumber ?? 0 })
@@ -432,6 +434,100 @@
             </q-td>
           </template>
         </q-table>
+
+        <!-- Mobile Card View -->
+        <div v-else class="mobile-products-cards">
+          <div
+            v-for="product in filteredProducts"
+            :key="product.id"
+            class="product-card mobile-only"
+            @click="viewProductDetails(product)"
+          >
+            <div class="product-card-header">
+              <div class="product-info">
+                <div class="product-name">{{ product.name }}</div>
+                <div v-if="product.brand" class="product-brand">{{ product.brand }}</div>
+                <div class="product-sku">{{ product.sku || '-' }}</div>
+              </div>
+              <q-chip
+                :color="getStockStatusColor(product.stock_status)"
+                :text-color="getStockStatusTextColor(product.stock_status)"
+                :label="$t(`productsPage.stockStatus.${product.stock_status}`)"
+                size="sm"
+              />
+            </div>
+
+            <div class="product-card-body">
+              <div class="product-details-grid">
+                <div class="detail-item">
+                  <div class="detail-label">Categorie</div>
+                  <div class="detail-value">{{ product.category || 'Onbekend' }}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Voorraad</div>
+                  <div class="detail-value">{{ product.total_stock || 0 }} {{ product.unit || 'st' }}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Prijs</div>
+                  <div class="detail-value">
+                    <span v-if="getBestPrice(product)">
+                      {{ formatPrice(getBestPrice(product)!) }}
+                    </span>
+                    <span v-else class="text-grey-6">Niet beschikbaar</span>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="product.description" class="product-description">
+                {{ product.description }}
+              </div>
+            </div>
+
+            <div class="product-card-actions">
+              <q-btn
+                icon="info"
+                label="Details"
+                flat
+                color="primary"
+                size="md"
+                class="mobile-action-btn"
+                @click.stop="viewProductDetails(product)"
+              />
+              <q-btn
+                icon="add_shopping_cart"
+                label="Bestellen"
+                flat
+                color="positive"
+                size="md"
+                class="mobile-action-btn"
+                @click.stop="handleAddToCart(product, 1)"
+                :disable="product.stock_status === 'out_of_stock'"
+              />
+              <q-btn
+                icon="playlist_add"
+                flat
+                color="blue-6"
+                size="md"
+                class="mobile-action-btn-icon"
+                @click.stop="handleAddToOrderList(product)"
+                :title="'Toevoegen aan orderlijst'"
+              />
+            </div>
+          </div>
+
+          <!-- Mobile Loading State -->
+          <div v-if="loading" class="mobile-loading">
+            <q-spinner-dots size="xl" color="primary" />
+            <div class="loading-text">{{ $t('productsPage.loading') }}</div>
+          </div>
+
+          <!-- Mobile Empty State -->
+          <div v-else-if="filteredProducts.length === 0" class="mobile-empty">
+            <q-icon name="inventory_2" size="4rem" color="grey-5" />
+            <div class="empty-title">Geen producten gevonden</div>
+            <div class="empty-subtitle">Probeer je zoekopdracht aan te passen</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1092,7 +1188,255 @@
     }
   }
 
+  // Mobile Product Cards
+  .mobile-products-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-4);
+
+    .product-card {
+      background: white;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--neutral-200);
+      overflow: hidden;
+      transition: all 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .product-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: var(--space-4) var(--space-4) var(--space-3) var(--space-4);
+        border-bottom: 1px solid var(--neutral-100);
+
+        .product-info {
+          flex: 1;
+
+          .product-name {
+            font-size: var(--text-base);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-1);
+            line-height: 1.4;
+          }
+
+          .product-brand {
+            font-size: var(--text-sm);
+            color: var(--text-muted);
+            margin-bottom: var(--space-1);
+          }
+
+          .product-sku {
+            font-size: var(--text-xs);
+            color: var(--text-muted);
+            font-family: monospace;
+            background: var(--neutral-100);
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            display: inline-block;
+          }
+        }
+      }
+
+      .product-card-body {
+        padding: var(--space-4);
+
+        .product-details-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: var(--space-3);
+          margin-bottom: var(--space-3);
+
+          .detail-item {
+            text-align: center;
+            padding: var(--space-2);
+            border: 1px solid var(--neutral-200);
+            border-radius: var(--radius-sm);
+
+            .detail-label {
+              font-size: var(--text-xs);
+              color: var(--text-muted);
+              display: block;
+              margin-bottom: var(--space-1);
+            }
+
+            .detail-value {
+              font-size: var(--text-sm);
+              font-weight: var(--font-weight-semibold);
+              color: var(--text-primary);
+            }
+          }
+        }
+
+        .product-description {
+          font-size: var(--text-sm);
+          color: var(--text-muted);
+          line-height: 1.4;
+          background: var(--neutral-50);
+          padding: var(--space-3);
+          border-radius: var(--radius-md);
+          border-left: 3px solid var(--primary);
+        }
+      }
+
+      .product-card-actions {
+        display: flex;
+        gap: var(--space-2);
+        padding: var(--space-3) var(--space-4);
+        background: var(--neutral-50);
+        border-top: 1px solid var(--neutral-100);
+
+        .mobile-action-btn {
+          flex: 1;
+          min-height: 44px;
+          font-weight: var(--font-weight-medium);
+          border-radius: var(--radius-md);
+          border: 1px solid currentColor;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: rgba(currentColor, 0.1);
+          }
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+        }
+
+        .mobile-action-btn-icon {
+          min-width: 44px;
+          min-height: 44px;
+          border-radius: var(--radius-md);
+          border: 1px solid currentColor;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: rgba(currentColor, 0.1);
+          }
+        }
+      }
+    }
+
+    .mobile-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-12);
+      gap: var(--space-4);
+
+      .loading-text {
+        color: var(--text-muted);
+        font-size: var(--text-base);
+      }
+    }
+
+    .mobile-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-12);
+      text-align: center;
+
+      .empty-title {
+        font-size: var(--text-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--text-primary);
+        margin: var(--space-4) 0 var(--space-2) 0;
+      }
+
+      .empty-subtitle {
+        font-size: var(--text-sm);
+        color: var(--text-muted);
+        max-width: 300px;
+      }
+    }
+  }
+
+  // Dark mode support
+  body.body--dark {
+    .mobile-products-cards {
+      .product-card {
+        background: var(--neutral-800);
+        border-color: var(--neutral-700);
+
+        .product-card-header {
+          border-color: var(--neutral-700);
+
+          .product-name {
+            color: var(--text-primary-dark);
+          }
+
+          .product-brand,
+          .product-sku {
+            color: var(--text-muted-dark);
+          }
+
+          .product-sku {
+            background: var(--neutral-700);
+          }
+        }
+
+        .product-card-body {
+          .product-details-grid .detail-item {
+            border-color: var(--neutral-600);
+            background: var(--neutral-750);
+          }
+
+          .product-description {
+            background: var(--neutral-700);
+            border-color: var(--primary);
+          }
+        }
+
+        .product-card-actions {
+          background: var(--neutral-700);
+          border-color: var(--neutral-600);
+        }
+      }
+    }
+  }
+
   @media (max-width: 480px) {
     // Additional mobile styles can be added here when needed
+    .mobile-products-cards {
+      padding: var(--space-3);
+      gap: var(--space-3);
+
+      .product-card {
+        .product-details-grid {
+          grid-template-columns: 1fr 1fr;
+          gap: var(--space-2);
+
+          .detail-item:nth-child(3) {
+            grid-column: span 2;
+          }
+        }
+
+        .product-card-actions {
+          flex-direction: column;
+          gap: var(--space-2);
+
+          .mobile-action-btn,
+          .mobile-action-btn-icon {
+            min-height: 40px;
+          }
+        }
+      }
+    }
   }
 </style>

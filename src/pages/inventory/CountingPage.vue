@@ -71,28 +71,32 @@
 
         <q-card-section class="active-session-content">
           <div class="session-stats">
-            <div class="stat-item">
+            <div class="stat-item progress-item">
               <div class="stat-label">{{ $t('counting.progress') }}</div>
               <div class="stat-value">
-                {{ activeSession.products_counted }}/{{
-                  activeSession.total_products_to_count
+                {{ countingStore.countingStats.counted_products }}/{{
+                  countingStore.countingStats.total_products
                 }}
+                <span class="progress-percentage">
+                  ({{ Math.round(countingStore.countingStats.progress_percentage) }}%)
+                </span>
               </div>
               <q-linear-progress
-                :value="
-                  activeSession.products_counted /
-                  activeSession.total_products_to_count
-                "
+                :value="countingStore.countingStats.progress_percentage / 100"
                 color="info"
-                size="8px"
+                size="12px"
                 class="progress-bar"
+                rounded
               />
+              <div class="remaining-text">
+                {{ countingStore.countingStats.remaining_products }} producten te gaan
+              </div>
             </div>
 
             <div class="stat-item">
-              <div class="stat-label">{{ $t('counting.sessionType') }}</div>
-              <div class="stat-value">
-                {{ formatSessionType(activeSession.session_type) }}
+              <div class="stat-label">{{ $t('counting.discrepancies') }}</div>
+              <div class="stat-value" :class="{ 'discrepancies': countingStore.countingStats.discrepancies > 0 }">
+                {{ countingStore.countingStats.discrepancies }}
               </div>
             </div>
 
@@ -103,10 +107,25 @@
               </div>
             </div>
 
-            <div v-if="activeSession.discrepancies_found > 0" class="stat-item">
-              <div class="stat-label">{{ $t('counting.discrepancies') }}</div>
-              <div class="stat-value discrepancies">
-                {{ activeSession.discrepancies_found }}
+            <div class="stat-item autosave-status">
+              <div class="stat-label">
+                <q-icon 
+                  :name="countingStore.pendingChanges ? 'sync' : 'check_circle'" 
+                  :class="{ 'text-warning': countingStore.pendingChanges, 'text-positive': !countingStore.pendingChanges }"
+                  size="sm"
+                />
+                Autosave Status
+              </div>
+              <div class="stat-value">
+                <span v-if="countingStore.pendingChanges" class="text-warning">
+                  Opslaan...
+                </span>
+                <span v-else-if="countingStore.lastSaveTime" class="text-positive">
+                  Opgeslagen {{ formatTime(countingStore.lastSaveTime.toISOString()) }}
+                </span>
+                <span v-else class="text-grey-6">
+                  Geen wijzigingen
+                </span>
               </div>
             </div>
           </div>
@@ -519,6 +538,28 @@
   onMounted(async () => {
     if (practiceId.value) {
       await clinicStore.fetchLocations(practiceId.value);
+      
+      // Try to restore active session first
+      const activeSession = await countingStore.loadActiveSession(practiceId.value);
+      if (activeSession) {
+        $q.notify({
+          type: 'info',
+          message: `Actieve telsessie hersteld: ${activeSession.name}`,
+          caption: 'Je kunt verder gaan waar je was gebleven',
+          timeout: 5000,
+          icon: 'restore',
+          actions: [
+            {
+              label: 'Ga verder',
+              color: 'white',
+              handler: () => {
+                router.push(`/inventory/counting/${activeSession.id}`);
+              }
+            }
+          ]
+        });
+      }
+      
       await refreshData();
     }
   });
@@ -561,7 +602,7 @@
   .active-session-content {
     .session-stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: var(--space-6);
 
       .stat-item {
@@ -569,6 +610,9 @@
           font-size: var(--text-sm);
           color: var(--text-muted);
           margin-bottom: var(--space-1);
+          display: flex;
+          align-items: center;
+          gap: var(--space-1);
         }
 
         .stat-value {
@@ -579,10 +623,36 @@
           &.discrepancies {
             color: var(--warning);
           }
+
+          .progress-percentage {
+            font-size: var(--text-sm);
+            color: var(--text-muted);
+            font-weight: var(--font-weight-normal);
+          }
         }
 
         .progress-bar {
           margin-top: var(--space-2);
+        }
+
+        .remaining-text {
+          font-size: var(--text-xs);
+          color: var(--text-muted);
+          margin-top: var(--space-1);
+        }
+
+        &.progress-item {
+          grid-column: span 2;
+          
+          @media (max-width: 768px) {
+            grid-column: span 1;
+          }
+        }
+
+        &.autosave-status {
+          .stat-value {
+            font-size: var(--text-sm);
+          }
         }
       }
 

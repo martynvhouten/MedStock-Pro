@@ -18,6 +18,9 @@ export const useCountingStore = defineStore('counting', () => {
   const sessions = ref<CountingSession[]>([]);
   const loading = ref(false);
   const isCountingMode = ref(false);
+  const autosaveEnabled = ref(true);
+  const lastSaveTime = ref<Date | null>(null);
+  const pendingChanges = ref(false);
 
   // Auth store
   const authStore = useAuthStore();
@@ -34,9 +37,9 @@ export const useCountingStore = defineStore('counting', () => {
       };
     }
 
-    const totalProducts = currentSession.value.total_products_to_count;
-    const countedProducts = currentSession.value.products_counted;
-    const discrepancies = currentSession.value.discrepancies_found;
+    const totalProducts = currentSession.value.total_products_to_count || availableProducts.value.length;
+    const countedProducts = countingEntries.value.length;
+    const discrepancies = countingEntries.value.filter(entry => Math.abs(entry.variance) > 0).length;
 
     return {
       total_products: totalProducts,
@@ -71,6 +74,76 @@ export const useCountingStore = defineStore('counting', () => {
     );
   });
 
+  // Autosave functionality
+  let autosaveTimeout: NodeJS.Timeout | null = null;
+
+  const scheduleAutosave = () => {
+    if (!autosaveEnabled.value || !currentSession.value) return;
+
+    if (autosaveTimeout) {
+      clearTimeout(autosaveTimeout);
+    }
+
+    autosaveTimeout = setTimeout(async () => {
+      await saveCurrentSession();
+    }, 2000); // Debounce for 2 seconds
+  };
+
+  const saveCurrentSession = async () => {
+    if (!currentSession.value || !pendingChanges.value) return;
+
+    try {
+      // Update session with current progress
+      const stats = countingStats.value;
+      await updateSession(currentSession.value.id, {
+        products_counted: stats.counted_products,
+        discrepancies_found: stats.discrepancies,
+        total_products_to_count: stats.total_products,
+        updated_at: new Date().toISOString(),
+      });
+
+      lastSaveTime.value = new Date();
+      pendingChanges.value = false;
+      
+      console.log('✅ Session autosaved at', lastSaveTime.value);
+    } catch (error) {
+      console.error('❌ Autosave failed:', error);
+    }
+  };
+
+  // Load active session on page reload
+  const loadActiveSession = async (practiceId: string) => {
+    try {
+      const { data: activeSession, error } = await supabase
+        .from('counting_sessions')
+        .select('*')
+        .eq('practice_id', practiceId)
+        .eq('status', 'in_progress')
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (activeSession) {
+        currentSession.value = activeSession;
+        isCountingMode.value = true;
+        
+        // Load related data
+        await Promise.all([
+          fetchProductsForSession(activeSession.id),
+          fetchCountingEntries(activeSession.id)
+        ]);
+
+        console.log('✅ Active session restored:', activeSession.name);
+        return activeSession;
+      }
+    } catch (error) {
+      console.error('Error loading active session:', error);
+    }
+    return null;
+  };
+
   // Actions
   const startCountingSession = async (request: StartCountingSessionRequest) => {
     try {
@@ -81,6 +154,8 @@ export const useCountingStore = defineStore('counting', () => {
         .insert([
           {
             ...request,
+            status: 'in_progress',
+            started_at: new Date().toISOString(),
             started_by: authStore.user?.id,
           },
         ])
@@ -91,9 +166,13 @@ export const useCountingStore = defineStore('counting', () => {
 
       currentSession.value = session;
       isCountingMode.value = true;
+      pendingChanges.value = true;
 
       // Fetch products to count
       await fetchProductsForSession(session.id);
+
+      // Schedule first autosave
+      scheduleAutosave();
 
       return session;
     } catch (error) {
@@ -120,12 +199,17 @@ export const useCountingStore = defineStore('counting', () => {
           current_quantity,
           last_counted_at,
           location:practice_locations(name),
-          product:products(id, name, sku, category, brand, unit, image_url)
+          product:products(id, name, sku, category, brand, unit, image_url, barcode)
         `
         )
-        .eq('practice_id', session.practice_id)
-        .in('location_id', session.location_ids);
+        .eq('practice_id', session.practice_id);
 
+      // Apply location filter if specified
+      if (session.location_ids && session.location_ids.length > 0) {
+        query = query.in('location_id', session.location_ids);
+      }
+
+      // Apply product filter if specified
       if (session.product_ids && session.product_ids.length > 0) {
         query = query.in('product_id', session.product_ids);
       }
@@ -142,17 +226,21 @@ export const useCountingStore = defineStore('counting', () => {
         category: item.product.category,
         brand: item.product.brand,
         unit: item.product.unit,
+        barcode: item.product.barcode,
         current_system_quantity: item.current_quantity,
         last_counted_at: item.last_counted_at,
-        location_name: item.location.name,
+        location_name: item.location?.name || 'Unknown',
+        location_id: item.location_id,
         image_url: item.product.image_url,
       }));
 
-      // Update session with product count
-      if (currentSession.value) {
+      // Update session with product count if this is the current session
+      if (currentSession.value?.id === sessionId) {
         await updateSession(session.id, {
           total_products_to_count: availableProducts.value.length,
         });
+        pendingChanges.value = true;
+        scheduleAutosave();
       }
     } catch (error) {
       console.error('Error fetching products for session:', error);
@@ -193,42 +281,42 @@ export const useCountingStore = defineStore('counting', () => {
       // Create counting entry
       const { data: entry, error: entryError } = await supabase
         .from('counting_entries')
-        .insert([
+        .upsert([
           {
-            session_id: currentSession.value.id,
-            practice_id: currentSession.value.practice_id,
-            location_id: locationId,
+            counting_session_id: currentSession.value.id,
             product_id: productId,
             system_quantity: systemQuantity,
             counted_quantity: countedQuantity,
+            variance_quantity: variance,
             count_method: options.countMethod || 'manual',
             confidence_level: options.confidenceLevel || 'high',
             batch_number: options.batchNumber,
             expiry_date: options.expiryDate,
             counted_by: authStore.user?.id,
+            counted_at: new Date().toISOString(),
             notes: options.notes,
-            photos: options.photos,
-            status: Math.abs(variance) > 0 ? 'discrepancy' : 'verified',
+            requires_approval: Math.abs(variance) > 0,
           },
-        ])
+        ], { onConflict: 'counting_session_id,product_id' })
         .select()
         .single();
 
       if (entryError) throw entryError;
 
-      countingEntries.value.push(entry);
+      // Update local state
+      const existingIndex = countingEntries.value.findIndex(
+        e => e.product_id === productId
+      );
+      
+      if (existingIndex >= 0) {
+        countingEntries.value[existingIndex] = entry;
+      } else {
+        countingEntries.value.push(entry);
+      }
 
-      // Update session progress
-      const newProductsCountedCount = currentSession.value.products_counted + 1;
-      const newDiscrepanciesCount =
-        Math.abs(variance) > 0
-          ? currentSession.value.discrepancies_found + 1
-          : currentSession.value.discrepancies_found;
-
-      await updateSession(currentSession.value.id, {
-        products_counted: newProductsCountedCount,
-        discrepancies_found: newDiscrepanciesCount,
-      });
+      // Mark for autosave
+      pendingChanges.value = true;
+      scheduleAutosave();
 
       return entry;
     } catch (error) {
@@ -258,6 +346,10 @@ export const useCountingStore = defineStore('counting', () => {
         countingEntries.value[index] = data;
       }
 
+      // Mark for autosave
+      pendingChanges.value = true;
+      scheduleAutosave();
+
       return data;
     } catch (error) {
       console.error('Error updating counting entry:', error);
@@ -269,6 +361,9 @@ export const useCountingStore = defineStore('counting', () => {
     try {
       if (!currentSession.value) throw new Error('No active counting session');
 
+      // Final save before completing
+      await saveCurrentSession();
+
       await updateSession(currentSession.value.id, {
         status: 'completed',
         completed_at: new Date().toISOString(),
@@ -276,6 +371,14 @@ export const useCountingStore = defineStore('counting', () => {
       });
 
       isCountingMode.value = false;
+      pendingChanges.value = false;
+      
+      // Clear autosave
+      if (autosaveTimeout) {
+        clearTimeout(autosaveTimeout);
+        autosaveTimeout = null;
+      }
+
       return true;
     } catch (error) {
       console.error('Error completing counting session:', error);
@@ -313,24 +416,23 @@ export const useCountingStore = defineStore('counting', () => {
       const { data: entries, error } = await supabase
         .from('counting_entries')
         .select('*')
-        .eq('session_id', sessionId)
-        .neq('variance', 0);
+        .eq('counting_session_id', sessionId)
+        .neq('variance_quantity', 0);
 
       if (error) throw error;
 
       // Apply each adjustment using the stock update function
       for (const entry of entries || []) {
         await supabase.rpc('update_stock_level', {
-          p_practice_id: entry.practice_id,
+          p_practice_id: session.practice_id,
           p_location_id: entry.location_id,
           p_product_id: entry.product_id,
-          p_quantity_change: entry.variance,
+          p_quantity_change: entry.variance_quantity,
           p_movement_type: 'count',
           p_performed_by: authStore.user?.id,
           p_reference_type: 'counting_session',
           p_reference_id: sessionId,
-          p_reason_code: 'count_correction',
-          p_notes: `Count adjustment from session: ${session.name}`,
+          p_reason: `Count adjustment from session: ${session.name}`,
         });
       }
 
@@ -395,12 +497,10 @@ export const useCountingStore = defineStore('counting', () => {
         .select(
           `
           *,
-          location:practice_locations(name),
-          product:products(name, sku),
-          counted_by_user:auth.users(email)
+          product:products(name, sku, barcode, image_url)
         `
         )
-        .eq('session_id', sessionId)
+        .eq('counting_session_id', sessionId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -424,6 +524,13 @@ export const useCountingStore = defineStore('counting', () => {
       isCountingMode.value = false;
       countingEntries.value = [];
       availableProducts.value = [];
+      pendingChanges.value = false;
+
+      // Clear autosave
+      if (autosaveTimeout) {
+        clearTimeout(autosaveTimeout);
+        autosaveTimeout = null;
+      }
 
       return true;
     } catch (error) {
@@ -440,6 +547,9 @@ export const useCountingStore = defineStore('counting', () => {
     sessions,
     loading,
     isCountingMode,
+    autosaveEnabled,
+    lastSaveTime,
+    pendingChanges,
 
     // Getters
     countingStats,
@@ -459,5 +569,8 @@ export const useCountingStore = defineStore('counting', () => {
     fetchSessions,
     fetchCountingEntries,
     cancelCountingSession,
+    loadActiveSession,
+    saveCurrentSession,
+    scheduleAutosave,
   };
 });

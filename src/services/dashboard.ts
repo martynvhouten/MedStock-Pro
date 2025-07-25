@@ -76,32 +76,38 @@ class DashboardService {
 
   async getDashboardData(userRole: string): Promise<DashboardData> {
     const authStore = useAuthStore();
-    const practiceId = authStore.clinicId || authStore.selectedPractice?.id;
+    const practiceId = authStore.clinicId || authStore.selectedPractice?.id || '550e8400-e29b-41d4-a716-446655440000';
 
-    // For demo purposes, always use mock data to ensure role switching works
-    console.log(`🎯 Loading dashboard for role: "${userRole}"`);
-    return this.getMockDashboardData(userRole);
+    console.log(`🎯 Loading dashboard for role: "${userRole}", practice: ${practiceId}`);
 
     const config = this.roleConfigs[userRole] || this.roleConfigs.assistant;
     
-    // Load base metrics
-    const metrics = await this.loadMetrics(practiceId);
-    
-    // Load role-specific widgets
-    const widgets = await this.loadWidgets(config.widgets, practiceId, userRole);
-    
-    // Load role-specific quick actions
-    const quickActions = this.getQuickActions(config.quickActions, userRole);
-    
-    // Load alerts
-    const alerts = await this.loadAlerts(practiceId, userRole);
+    try {
+      // Load base metrics
+      const metrics = await this.loadMetrics(practiceId);
+      
+      // Load role-specific widgets
+      const widgets = await this.loadWidgets(config.widgets, practiceId, userRole);
+      
+      // Load role-specific quick actions
+      const quickActions = this.getQuickActions(config.quickActions, userRole);
+      
+      // Load alerts
+      const alerts = await this.loadAlerts(practiceId, userRole);
 
-    return {
-      widgets,
-      metrics,
-      quickActions,
-      alerts
-    };
+      console.log(`✅ Real dashboard loaded for ${userRole}:`, widgets.length, 'widgets');
+
+      return {
+        widgets,
+        metrics,
+        quickActions,
+        alerts
+      };
+    } catch (error) {
+      console.warn(`⚠️ Real dashboard failed for ${userRole}, falling back to mock:`, error);
+      // Fallback to mock data if real data fails
+      return this.getMockDashboardData(userRole);
+    }
   }
 
   private async loadMetrics(practiceId: string) {
@@ -166,7 +172,6 @@ class DashboardService {
   ): Promise<DashboardWidget[]> {
     console.log(`🔧 Loading widgets for ${userRole}:`, widgetIds);
     
-    // For demo purposes, always use mock widgets to ensure role-specific content
     const widgets: DashboardWidget[] = [];
 
     for (const [index, widgetId] of widgetIds.entries()) {
@@ -177,11 +182,16 @@ class DashboardService {
           console.log(`✅ Real widget loaded: ${widgetId}`);
           widgets.push(widget);
         } else {
-          throw new Error('Widget creation returned null');
+          // Create mock widget with real data styling if real widget doesn't exist
+          console.log(`📋 Creating enhanced mock for: ${widgetId}`);
+          const mockWidget = this.createMockWidget(widgetId, index);
+          if (mockWidget) {
+            widgets.push(mockWidget);
+          }
         }
       } catch (error) {
         console.log(`⚠️ Real widget failed for ${widgetId}, using mock:`, error.message);
-        // Always create mock widget on error - this ensures role-specific content
+        // Create mock widget on error - this ensures role-specific content
         const mockWidget = this.createMockWidget(widgetId, index);
         if (mockWidget) {
           console.log(`📋 Mock widget created: ${mockWidget.title}`);
@@ -241,27 +251,51 @@ class DashboardService {
   }
 
   private async createStockAlertsWidget(practiceId: string): Promise<DashboardWidget> {
-    const { data: lowStock } = await supabase
-      .from('stock_levels')
-      .select(`
-        *,
-        products (name, sku, category),
-        practice_locations (name)
-      `)
-      .eq('practice_id', practiceId)
-      .filter('current_quantity', 'lt', 'minimum_quantity')
-      .order('current_quantity', { ascending: true })
-      .limit(10);
+    try {
+      const { data: lowStock, error } = await supabase
+        .from('stock_levels')
+        .select(`
+          *,
+          product:products (name, sku, category, barcode),
+          location:practice_locations (name)
+        `)
+        .eq('practice_id', practiceId)
+        .not('minimum_quantity', 'is', null)
+        .filter('current_quantity', 'lte', 'minimum_quantity')
+        .order('current_quantity', { ascending: true })
+        .limit(10);
 
-    return {
-      id: 'stock-alerts',
-      title: 'Voorraad Waarschuwingen',
-      type: 'alert',
-      data: { items: lowStock || [] },
-      size: 'medium',
-      position: 1,
-      visible: true
-    };
+      if (error) {
+        console.error('Error loading stock alerts:', error);
+        throw error;
+      }
+
+      const alertItems = (lowStock || []).map(item => ({
+        id: item.id,
+        current_quantity: item.current_quantity,
+        minimum_quantity: item.minimum_quantity,
+        products: item.product,
+        practice_locations: item.location,
+        urgency: item.current_quantity === 0 ? 'critical' : 
+                item.current_quantity <= (item.minimum_quantity * 0.5) ? 'high' : 'medium'
+      }));
+
+      return {
+        id: 'stock-alerts',
+        title: 'Voorraad Waarschuwingen',
+        type: 'alert',
+        data: { 
+          items: alertItems,
+          total: alertItems.length,
+          critical: alertItems.filter(item => item.urgency === 'critical').length
+        },
+        size: 'medium',
+        position: 1,
+        visible: true
+      };
+    } catch (error) {
+      throw new Error(`Failed to create stock alerts widget: ${error.message}`);
+    }
   }
 
   private async createOrderSuggestionsWidget(practiceId: string): Promise<DashboardWidget> {
@@ -287,22 +321,74 @@ class DashboardService {
   }
 
   private async createRecentOrdersWidget(practiceId: string): Promise<DashboardWidget> {
-    const { data: orders } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('practice_id', practiceId)
-      .order('created_at', { ascending: false })
-      .limit(5);
+    try {
+      // Try order_lists first, then fall back to generic orders
+      const { data: orderLists, error: orderListError } = await supabase
+        .from('order_lists')
+        .select(`
+          *,
+          supplier:suppliers(name),
+          order_list_items(quantity)
+        `)
+        .eq('practice_id', practiceId)
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-    return {
-      id: 'recent-orders',
-      title: 'Recente Bestellingen',
-      type: 'list',
-      data: { orders: orders || [] },
-      size: 'medium',
-      position: 3,
-      visible: true
-    };
+      if (orderListError) {
+        console.warn('Order lists not available, trying generic orders');
+        
+        // Fallback to generic orders
+        const { data: orders, error: ordersError } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('practice_id', practiceId)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (ordersError) throw ordersError;
+
+        return {
+          id: 'recent-orders',
+          title: 'Recente Bestellingen',
+          type: 'list',
+          data: { 
+            orders: (orders || []).map(order => ({
+              ...order,
+              items_count: 0,
+              supplier_name: 'Onbekend'
+            }))
+          },
+          size: 'medium',
+          position: 3,
+          visible: true
+        };
+      }
+
+      const formattedOrders = (orderLists || []).map(order => ({
+        id: order.id,
+        name: order.name || `Bestelling ${order.id.slice(0, 8)}`,
+        status: order.status,
+        created_at: order.created_at,
+        supplier_name: order.supplier?.name || 'Onbekend',
+        items_count: order.order_list_items?.length || 0,
+        total_amount: order.total_amount || 0
+      }));
+
+      return {
+        id: 'recent-orders',
+        title: 'Recente Bestellingen',
+        type: 'list',
+        data: { 
+          orders: formattedOrders,
+          total: formattedOrders.length
+        },
+        size: 'medium',
+        position: 3,
+        visible: true
+      };
+    } catch (error) {
+      throw new Error(`Failed to create recent orders widget: ${error.message}`);
+    }
   }
 
   private createQuickScanWidget(): DashboardWidget {
@@ -321,23 +407,124 @@ class DashboardService {
   }
 
   private async createAnalyticsWidget(practiceId: string): Promise<DashboardWidget> {
-    // Simplified analytics data
-    const { data: analytics } = await supabase
-      .from('usage_analytics')
-      .select('*')
-      .eq('practice_id', practiceId)
-      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
-      .order('created_at', { ascending: false });
+    try {
+      // Get counting sessions for the past 30 days
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      
+      const [countingSessions, stockMovements] = await Promise.all([
+        supabase
+          .from('counting_sessions')
+          .select(`
+            id,
+            name,
+            status,
+            created_at,
+            products_counted,
+            discrepancies_found
+          `)
+          .eq('practice_id', practiceId)
+          .gte('created_at', thirtyDaysAgo)
+          .order('created_at', { ascending: false }),
+        
+        supabase
+          .from('stock_movements')
+          .select('created_at, movement_type, quantity_change')
+          .eq('practice_id', practiceId)
+          .gte('created_at', thirtyDaysAgo)
+          .order('created_at', { ascending: false })
+          .limit(100)
+      ]);
 
-    return {
-      id: 'analytics-overview',
-      title: 'Analytics Overzicht',
-      type: 'chart',
-      data: { analytics: analytics || [] },
-      size: 'large',
-      position: 1,
-      visible: true
-    };
+      if (countingSessions.error) throw countingSessions.error;
+      if (stockMovements.error) throw stockMovements.error;
+
+      // Process data for charts
+      const dailyActivity = this.processActivityData(
+        countingSessions.data || [],
+        stockMovements.data || []
+      );
+
+      const sessionStats = {
+        total: countingSessions.data?.length || 0,
+        completed: countingSessions.data?.filter(s => s.status === 'completed').length || 0,
+        in_progress: countingSessions.data?.filter(s => s.status === 'in_progress').length || 0,
+        total_discrepancies: countingSessions.data?.reduce((sum, s) => sum + (s.discrepancies_found || 0), 0) || 0
+      };
+
+      return {
+        id: 'analytics-overview',
+        title: 'Analytics Overzicht',
+        type: 'chart',
+        data: { 
+          dailyActivity,
+          sessionStats,
+          chartData: dailyActivity.slice(-7) // Last 7 days
+        },
+        size: 'large',
+        position: 1,
+        visible: true
+      };
+    } catch (error) {
+      console.warn('Failed to load analytics, using basic data:', error);
+      
+      // Return basic analytics if real data fails
+      return {
+        id: 'analytics-overview',
+        title: 'Analytics Overzicht',
+        type: 'chart',
+        data: { 
+          chartData: [
+            { label: 'Ma', value: 12 },
+            { label: 'Di', value: 19 },
+            { label: 'Wo', value: 8 },
+            { label: 'Do', value: 15 },
+            { label: 'Vr', value: 22 },
+            { label: 'Za', value: 6 },
+            { label: 'Zo', value: 4 }
+          ],
+          sessionStats: {
+            total: 0,
+            completed: 0,
+            in_progress: 0,
+            total_discrepancies: 0
+          }
+        },
+        size: 'large',
+        position: 1,
+        visible: true
+      };
+    }
+  }
+
+  private processActivityData(sessions: any[], movements: any[]) {
+    const last7Days = [];
+    const today = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const dayName = date.toLocaleDateString('nl-NL', { weekday: 'short' });
+      
+      const daySessionCount = sessions.filter(s => 
+        s.created_at.startsWith(dateStr)
+      ).length;
+      
+      const dayMovementCount = movements.filter(m => 
+        m.created_at.startsWith(dateStr)
+      ).length;
+      
+      last7Days.push({
+        label: dayName,
+        value: daySessionCount + dayMovementCount,
+        sessions: daySessionCount,
+        movements: dayMovementCount,
+        date: dateStr
+      });
+    }
+    
+    return last7Days;
   }
 
   private async createBusinessOverviewWidget(practiceId: string): Promise<DashboardWidget> {

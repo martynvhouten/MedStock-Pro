@@ -182,15 +182,17 @@
       </q-card-section>
     </BaseCard>
 
-    <!-- Stock Levels Table -->
+    <!-- Stock Levels - Responsive Layout -->
     <BaseCard>
+      <!-- Desktop Table View -->
       <q-table
+        v-if="!$q.screen.lt.md"
         :rows="filteredStockLevels"
         :columns="columns"
         :loading="loading"
         row-key="id"
         :pagination="{ rowsPerPage: 25 }"
-        class="stock-levels-table"
+        class="stock-levels-table desktop-only"
       >
         <template v-slot:body-cell-product="props">
           <q-td :props="props">
@@ -279,6 +281,99 @@
           </q-td>
         </template>
       </q-table>
+
+      <!-- Mobile Card View -->
+      <div v-else class="mobile-stock-cards">
+        <div
+          v-for="item in filteredStockLevels"
+          :key="item.id"
+          class="stock-card mobile-only"
+          @click="editStockLevel(item)"
+        >
+          <div class="stock-card-header">
+            <div class="product-info">
+              <div class="product-name">{{ item.products?.name || 'Unknown Product' }}</div>
+              <div class="product-sku">{{ item.products?.sku || 'N/A' }}</div>
+            </div>
+            <q-chip
+              :color="getStockStatusColor(item)"
+              text-color="white"
+              size="sm"
+              :icon="getStockStatusIcon(item)"
+            >
+              {{ getStockStatusText(item) }}
+            </q-chip>
+          </div>
+
+          <div class="stock-card-body">
+            <div class="stock-info">
+              <div class="current-stock-section">
+                <div class="stock-label">Huidige voorraad</div>
+                <div class="stock-value">
+                  {{ item.current_quantity }} {{ item.products?.unit || 'st' }}
+                </div>
+              </div>
+
+              <div class="stock-levels-grid">
+                <div class="level-item">
+                  <div class="level-label">Minimum</div>
+                  <div class="level-value">{{ item.minimum_stock || 0 }}</div>
+                </div>
+                <div class="level-item">
+                  <div class="level-label">Maximum</div>
+                  <div class="level-value">{{ item.maximum_stock || 0 }}</div>
+                </div>
+                <div class="level-item">
+                  <div class="level-label">Bestelgrens</div>
+                  <div class="level-value">{{ item.reorder_point || 0 }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stock-card-actions">
+            <q-btn
+              icon="edit"
+              label="Aanpassen"
+              flat
+              color="primary"
+              size="md"
+              class="mobile-action-btn"
+              @click.stop="editStockLevel(item)"
+            />
+            <q-btn
+              icon="swap_horiz"
+              label="Overboeking"
+              flat
+              color="blue-6"
+              size="md"
+              class="mobile-action-btn"
+              @click.stop="transferStock(item)"
+            />
+            <q-btn
+              icon="history"
+              flat
+              color="grey-6"
+              size="md"
+              class="mobile-action-btn-icon"
+              @click.stop="viewMovements(item)"
+            />
+          </div>
+        </div>
+
+        <!-- Mobile Loading State -->
+        <div v-if="loading" class="mobile-loading">
+          <q-spinner-dots size="xl" color="primary" />
+          <div class="loading-text">{{ $t('inventory.loading') }}</div>
+        </div>
+
+        <!-- Mobile Empty State -->
+        <div v-else-if="filteredStockLevels.length === 0" class="mobile-empty">
+          <q-icon name="inventory_2" size="4rem" color="grey-5" />
+          <div class="empty-title">Geen voorraad gevonden</div>
+          <div class="empty-subtitle">Probeer je zoekopdracht aan te passen</div>
+        </div>
+      </div>
     </BaseCard>
 
     <!-- Quick Stock Adjustment Dialog -->
@@ -792,6 +887,216 @@
 
       @media (max-width: 640px) {
         padding: 6px;
+      }
+    }
+  }
+
+  // Mobile Stock Cards
+  .mobile-stock-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-4);
+
+    .stock-card {
+      background: white;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--neutral-200);
+      overflow: hidden;
+      transition: all 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .stock-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: var(--space-4) var(--space-4) var(--space-3) var(--space-4);
+        border-bottom: 1px solid var(--neutral-100);
+
+        .product-info {
+          flex: 1;
+
+          .product-name {
+            font-size: var(--text-base);
+            font-weight: var(--font-weight-semibold);
+            color: var(--text-primary);
+            margin-bottom: var(--space-1);
+            line-height: 1.4;
+          }
+
+          .product-sku {
+            font-size: var(--text-sm);
+            color: var(--text-muted);
+          }
+        }
+      }
+
+      .stock-card-body {
+        padding: var(--space-4);
+
+        .current-stock-section {
+          margin-bottom: var(--space-4);
+          text-align: center;
+          padding: var(--space-3);
+          background: var(--neutral-50);
+          border-radius: var(--radius-md);
+
+          .stock-label {
+            font-size: var(--text-sm);
+            color: var(--text-muted);
+            margin-bottom: var(--space-1);
+          }
+
+          .stock-value {
+            font-size: var(--text-xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--primary);
+          }
+        }
+
+        .stock-levels-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: var(--space-3);
+
+          .level-item {
+            text-align: center;
+            padding: var(--space-2);
+            border: 1px solid var(--neutral-200);
+            border-radius: var(--radius-sm);
+
+            .level-label {
+              font-size: var(--text-xs);
+              color: var(--text-muted);
+              display: block;
+              margin-bottom: var(--space-1);
+            }
+
+            .level-value {
+              font-size: var(--text-sm);
+              font-weight: var(--font-weight-semibold);
+              color: var(--text-primary);
+            }
+          }
+        }
+      }
+
+      .stock-card-actions {
+        display: flex;
+        gap: var(--space-2);
+        padding: var(--space-3) var(--space-4);
+        background: var(--neutral-50);
+        border-top: 1px solid var(--neutral-100);
+
+        .mobile-action-btn {
+          flex: 1;
+          min-height: 44px;
+          font-weight: var(--font-weight-medium);
+          border-radius: var(--radius-md);
+          border: 1px solid currentColor;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: rgba(currentColor, 0.1);
+          }
+        }
+
+        .mobile-action-btn-icon {
+          min-width: 44px;
+          min-height: 44px;
+          border-radius: var(--radius-md);
+          border: 1px solid currentColor;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: rgba(currentColor, 0.1);
+          }
+        }
+      }
+    }
+
+    .mobile-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-12);
+      gap: var(--space-4);
+
+      .loading-text {
+        color: var(--text-muted);
+        font-size: var(--text-base);
+      }
+    }
+
+    .mobile-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-12);
+      text-align: center;
+
+      .empty-title {
+        font-size: var(--text-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--text-primary);
+        margin: var(--space-4) 0 var(--space-2) 0;
+      }
+
+      .empty-subtitle {
+        font-size: var(--text-sm);
+        color: var(--text-muted);
+        max-width: 300px;
+      }
+    }
+  }
+
+  // Dark mode support
+  body.body--dark {
+    .mobile-stock-cards {
+      .stock-card {
+        background: var(--neutral-800);
+        border-color: var(--neutral-700);
+
+        .stock-card-header {
+          border-color: var(--neutral-700);
+
+          .product-name {
+            color: var(--text-primary-dark);
+          }
+
+          .product-sku {
+            color: var(--text-muted-dark);
+          }
+        }
+
+        .stock-card-body {
+          .current-stock-section {
+            background: var(--neutral-700);
+          }
+
+          .stock-levels-grid .level-item {
+            border-color: var(--neutral-600);
+            background: var(--neutral-750);
+          }
+        }
+
+        .stock-card-actions {
+          background: var(--neutral-700);
+          border-color: var(--neutral-600);
+        }
       }
     }
   }
